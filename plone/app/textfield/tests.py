@@ -96,6 +96,24 @@ class TestIntegration(ptc.PloneTestCase):
         context.text = IWithText['text'].fromUnicode(u"<span>Some html</span>")
         output = context.restrictedTraverse('@@text-transform/text')()
         self.assertEquals(u"<span>Some html</span>", output.strip())
+
+        # test transform of text/html to text/x-html-safe when UID-linking is
+        # enabled for https://dev.plone.org/ticket/12442
+        class IWithText(Interface):
+            text = RichText(title=u"Text",
+                            default_mime_type='text/html',
+                            output_mime_type='text/x-html-safe')
+
+        from zope.component import provideUtility
+        from plone.outputfilters.filters.resolveuid_and_caption import IResolveUidsEnabler
+        class ResolveUidsEnabler(object):
+            implements(IResolveUidsEnabler)
+            available = True
+        provideUtility(ResolveUidsEnabler(), IResolveUidsEnabler)
+
+        context.text = IWithText['text'].fromUnicode(u'<a href="#a">Anchor</a>')
+        output = context.restrictedTraverse('@@text-transform/text')()
+        self.assertEquals(u'<a href="#a">Anchor</a>', output.strip())
     
     def testWidgetExtract(self):
         from zope.interface import Interface, implements
