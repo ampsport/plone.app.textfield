@@ -217,7 +217,73 @@ class TestIntegration(ptc.PloneTestCase):
         allowed = widget.allowedMimeTypes()
         self.failUnless('text/html' in allowed)
         self.failUnless('text/structured' in allowed)
+
+    def testWidgetInSubForm(self):
+        from zope.component import provideAdapter
+        from zope.interface import Interface, implements
+        from zope.interface import alsoProvides
+        from zope.schema import Object, List
+        from zope.pagetemplate.interfaces import IPageTemplate
+        from plone.app.textfield import RichText
+        from zope.publisher.browser import TestRequest
+        from Products.CMFCore.PortalContent import PortalContent
+        from z3c.form import button
+        from z3c.form.browser.multi import MultiWidget
+        from z3c.form.interfaces import IButtonAction
+        from z3c.form.interfaces import IFormLayer
+        from z3c.form.interfaces import IMultiWidget
+        from z3c.form.interfaces import ISubmitWidget
+        from z3c.form.interfaces import INPUT_MODE
+        from z3c.form.testing import getPath
+        from z3c.form.widget import FieldWidget
+        from z3c.form.widget import WidgetTemplateFactory
+        from zope.publisher.interfaces import IRequest
+
+        class IWithText(Interface):
+            
+            text = RichText(title=u"Text",
+                            default_mime_type='text/structured',
+                            output_mime_type='text/html',
+                            allowed_mime_types=('text/structured', 'text/html'))
+
+        class WithText(PortalContent):
+            implements(IWithText)
+            text = None
+
+        class IListOfTexts(Interface):
+            
+            texts = List(title = u"Texts",
+                         value_type = Object(title=u'Text',
+                                             schema=IWithText),
+                         required = False,
+                         )
+
+        class ListOfTexts(PortalContent):
+            implements(IListOfTexts)
+            texts = None
         
+        provideAdapter(button.ButtonActions)
+        provideAdapter(button.ButtonActionHandler)
+        provideAdapter(button.ButtonAction, provides=IButtonAction)
+
+        provideAdapter(
+            WidgetTemplateFactory(getPath('submit_input.pt'), 'text/html'),
+            (None, None, None, None, ISubmitWidget),
+            IPageTemplate, name=INPUT_MODE)
+
+        provideAdapter(
+            WidgetTemplateFactory(getPath('multi_input.pt'), 'text/html'),
+            (None, None, None, None, IMultiWidget),
+            IPageTemplate, name=INPUT_MODE)
+
+        request = TestRequest()
+        alsoProvides(request, IFormLayer)
+
+        widget = FieldWidget(IListOfTexts['texts'], MultiWidget(request))
+        widget.update()
+        request.form['%s.buttons.add' % widget.name] = u"Add"
+        widget.update()
+
     
 def test_suite():
     
