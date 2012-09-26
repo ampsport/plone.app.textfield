@@ -280,9 +280,9 @@ class TestIntegration(ptc.PloneTestCase):
         alsoProvides(request, IFormLayer)
 
         widget = FieldWidget(IListOfTexts['texts'], MultiWidget(request))
-        widget.update()
         request.form['%s.buttons.add' % widget.name] = u"Add"
         widget.update()
+        widget.render()
 
     
 def test_suite():
