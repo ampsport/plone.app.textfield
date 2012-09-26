@@ -280,6 +280,13 @@ class TestIntegration(ptc.PloneTestCase):
         alsoProvides(request, IFormLayer)
 
         widget = FieldWidget(IListOfTexts['texts'], MultiWidget(request))
+
+        context = ListOfTexts()
+        context.id = 'context'
+        self.portal._setObject('context', context)
+        context = self.portal['context']
+        widget.context = context
+
         request.form['%s.buttons.add' % widget.name] = u"Add"
         widget.update()
         widget.render()
