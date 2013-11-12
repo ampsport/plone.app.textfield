@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.3.0 (unreleased)
+------------------
+
+- Read the default_editor setting from plone.app.registry instead of from the
+  portal properties. This release will works on Plone 5 only.
+  [timo]
+
+
 1.2.3 (unreleased)
 ------------------
 

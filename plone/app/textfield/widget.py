@@ -1,6 +1,10 @@
 from Acquisition import ImplicitAcquisitionWrapper
 from UserDict import UserDict
 
+from zope.component import getUtility
+from plone.registry.interfaces import IRegistry
+from plone.app.controlpanel.interfaces import IEditingSchema
+
 from zope.interface import implementsOnly, implementer
 from zope.component import adapts, adapter
 
@@ -16,21 +20,21 @@ from plone.app.textfield.value import RichTextValue
 from plone.app.textfield.utils import getAllowedContentTypes
 
 class IRichTextWidget(ITextAreaWidget):
-    
+
     def allowedMimeTypes():
         """Get allowed MIME types
         """
 
 class RichTextWidget(TextAreaWidget):
     implementsOnly(IRichTextWidget)
-    
+
     klass = u'richTextWidget'
     value = None
 
     def update(self):
         super(RichTextWidget, self).update()
         addFieldClass(self)
-    
+
     def wrapped_context(self):
         context = self.context
         # We'll wrap context in the current site *if* it's not already
@@ -45,13 +49,13 @@ class RichTextWidget(TextAreaWidget):
             context = ImplicitAcquisitionWrapper(
                 context, self.form.context)
         return context
-    
+
     def extract(self, default=NOVALUE):
         raw = self.request.get(self.name, default)
-        
+
         if raw is default:
             return default
-        
+
         mimeType = self.request.get("%s.mimeType" % self.name, self.field.default_mime_type)
         return RichTextValue(raw=raw,
                              mimeType=mimeType,
@@ -64,6 +68,12 @@ class RichTextWidget(TextAreaWidget):
             allowed = getAllowedContentTypes()
         return list(allowed)
 
+    def default_editor(self):
+        registry = getUtility(IRegistry)
+        settings = registry.forInterface(IEditingSchema)
+        return settings.default_editor
+
+
 @adapter(IRichText, IFormLayer)
 @implementer(IFieldWidget)
 def RichTextFieldWidget(field, request):
@@ -73,9 +83,9 @@ def RichTextFieldWidget(field, request):
 class RichTextConverter(BaseDataConverter):
     """Data converter for the RichTextWidget
     """
-    
+
     adapts(IRichText, IRichTextWidget)
-    
+
     def toWidgetValue(self, value):
         if IRichTextValue.providedBy(value):
             return value
